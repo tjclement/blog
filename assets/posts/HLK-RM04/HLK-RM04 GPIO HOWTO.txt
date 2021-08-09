@@ -1,0 +1,13 @@
+Firmware Version >= V1.83
+
+
+1.Disable the "SERIAL RTS(GPIO_1)" option(web page "HLK-RM04"->"Advance Settings"->"SERIAL RTS(GPIO_1)").
+2.serial AT COMMAND :
+	at+gpio2=?
+	at+gpio2=0
+	at+gpio2=1
+
+
+OR http AT COMMAND:
+
+Check the "hlk-rm04 gpio test.html".
