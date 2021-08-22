@@ -1,10 +1,10 @@
 ---
-title: Reverse Engineering the Neewer 660 Keylight's Remote Control
+title: Reverse Engineering the Neewer 660 Keylight's Remote
 author: Tom Clement
 categories: [blog,projects]
 tags: [video,streaming]
 image: /assets/posts/neewer/spi_snooping.png
-description: This blog paints the journey of making a custom remote for Neewer light panels, and shows some of the basic steps you can take in reverse engineering embedded devices.
+description: A journey of basic RE of embedded devices.
 ---
 
 ![Neewer NL660-2.4 Video Keylight Panel](/assets/posts/neewer/NL660-24.jpg){:width="400px"}
