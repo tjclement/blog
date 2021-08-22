@@ -4,7 +4,7 @@ author: Tom Clement
 categories: [blog,projects]
 tags: [video,streaming]
 image: /assets/posts/neewer/spi_snooping.png
-description: A journey of basic RE of embedded devices.
+description: A journey of basic embedded RE turning into remote control
 ---
 
 ![Neewer NL660-2.4 Video Keylight Panel](/assets/posts/neewer/NL660-24.jpg){:width="400px"}
