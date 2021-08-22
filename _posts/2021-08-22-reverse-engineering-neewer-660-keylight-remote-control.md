@@ -3,9 +3,11 @@ title: Reverse Engineering the Neewer 660 Keylight's Remote Control
 author: Tom Clement
 categories: [blog,projects]
 tags: [video,streaming]
+image: /assets/posts/neewer/spi_snooping.png
 ---
 
 ![Neewer NL660-2.4 Video Keylight Panel](/assets/posts/neewer/NL660-24.jpg){:width="400px"}
+_Neewer NL660-2.4 Video Keylight Panel with remote_
 
 ## The need for a DIY remote
 Neewer makes decent light panels for photography, video, and streaming. Their flagship high-CRI temperature adjustable [NL660-2.4 panels](https://s.click.aliexpress.com/e/_ApqysS)[^afflink] are around half the price of an Elgato Key Light, and come with a wireless remote to control them. I recently picked up a pair of them, and I'm very happy with their light quality and brightness.
@@ -21,6 +23,7 @@ This remote was no exception, and a quick online search yielded [a full test rep
 
 
 ![Neewer NL660-2.4 RT-100 radio interference test report](/assets/posts/neewer/report.png){:width="400px"}
+_Neewer NL660-2.4 RT-100 radio interference test report_
 
 Bluetooth and ZigBee are two widely used wireless technologies that use GFSK at 2.4GHz, but scanning for traffic on either ended up without results. So let's move on to disassemble the remote in the hopes of identifying what chips it uses for communication.
 
@@ -34,6 +37,7 @@ Once inside, we see that the brains of the remote is an 8-bit STM8L152C6T6 micro
 &nbsp;
 <img alt="SI24R1 2.4GHz radio IC" src="/assets/posts/neewer/si24.jpg" width="300px">
 </p>
+![]()_Microscope shots of the microcontroller (left) and the radio IC (right)_
 
 A quick online search shows that the SI24R1 is a clone of the widely used Nordic NRF24L01. I had one of those laying around, but using them to snoop traffic is not that easy: the NRF24 requires you to provide a physical channel (frequency), a packet destination address, and a few other details like packet length. It has no promiscuous mode where it just dumps all packets it sees.
 
@@ -43,10 +47,12 @@ Travis Goodspeed wrote [a wonderful blog post](https://travisgoodspeed.blogspot.
 STM8-family ICs can be debugged using [ST's SWIM protocol](https://www.st.com/resource/en/user_manual/cd00173911-stm8-swim-communication-protocol-and-debug-module-stmicroelectronics.pdf). Thankfully, Neewer was kind enough to expose a 4-pin SWIM debug header right next to the STM8. From the [STM8L152C6T6 datasheet](https://www.st.com/content/ccc/resource/technical/document/datasheet/43/12/db/4c/8b/08/4a/73/CD00240181.pdf/files/CD00240181.pdf/jcr:content/translations/en.CD00240181.pdf) we can trace the SWIM pins with a multimeter to the debug port, and find the following pinout:
 
 ![STM8 SWIM debug port](/assets/posts/neewer/prog_header.jpg){:width="500px"}
+_The PCB has an exposed SWIM debug port for its STM8_
 
 At this point you can use the [ST Visual Programmer](https://www.st.com/en/development-tools/stvp-stm8.html) tool (note: windows-only) together with an [STLink-v2 compatible debugger](https://www.aliexpress.com/item/1005002821616606.html) to attach to the STM8. Unfortunately, we are greeted by an error message when we try to dump its flash storage:
 
 ![STVP permission denied error](/assets/posts/neewer/stvp_error.jpg){:width="600px"}
+_Too bad: readout protection prevents dumping flash storage_
 
 Ok, so Neewer burnt the e-fuse that permits a debugger from reading flash contents. Whilst there is a way to [break this readout protection using voltage glitching](https://itooktheredpill.irgendwo.org/2020/stm8-readout-protection/), it's not the easiest route for now.
 
@@ -54,14 +60,17 @@ Ok, so Neewer burnt the e-fuse that permits a debugger from reading flash conten
 Since all we want is to know the initialisation details of the SI24R1 and the packet protocol, dumping or changing the STM8 firmware is not really important. Instead, we can also simply listen in on the SPI bus that the STM8 uses to initialise the SI24R1 and send packet data. This time, we dive into [SI24's datasheet](https://datasheet.lcsc.com/lcsc/1811142211_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.pdf) and find its SPI pins. They are not broken out to testpoints on the PCB, and because the SI24 has small pads that are hard to solder wires to, it's easier to trace the pins to where they connect on the STM8. The big pins there allow us to solder to our heart's content. Here's the pinout of the SPI bus:
 
 ![STM8 SPI pinout](/assets/posts/neewer/spi_pins.jpg){:width="500px"}
+_SPI pinout from the STM8 to the SI24_
 
 Time to solder some bodge wires to the pins (as they are not big enough to directly attach probes to), and hook up a logic analyser. For these kinds of bus signals with low frequencies (i.e. not hundreds of MHz+) and low number of pins, any logic analyser will do.
 
-![Logic analyser hooked up to SPI pins](/assets/posts/neewer/spi_snooping.jpg){:width="500px"}
+![Logic analyser hooked up to SPI pins](/assets/posts/neewer/spi_snooping.png){:width="500px"}
+_Wires soldered to the SPI pins, connected to a logic analyser to dump SPI traffic_
 
  Firing up the logic analyser, powering on the remote, and pressing a button immediately looks promising:
 
 ![SPI bus data](/assets/posts/neewer/spi_traffic.png){:width="600px"}
+_SPI bus data, sent when pressing a button. The first 4 bytes shown here configure the TX address_
 
 ## Neewer's NRF24 wireless configuration
 
@@ -101,7 +110,8 @@ There appears to be no security in the protocol: no acknowledgements needed from
 ## Let there be light: a custom remote
 With the NRF24 configuration and control protocol in hand, making a prototype remote isn't all that hard anymore: there's [a great Arduino library for the NRF24](https://www.arduino.cc/reference/en/libraries/rf24/), and it has examples that contain almost everything we need configuration-wise. Hook up an Arduino-compatible board to an NRF24L01 module[^nrfclones], and you're ready to go. I ordered a nifty Arduino Nano compatible board with an NRF24L01 integrated on it (RFNano), and modified an example of the NRF24 library that cycles through Neewer brightness commands. After flashing, we're greeted with a dimming room:
 
-![SPI bus data](/assets/posts/neewer/panel_haxed.gif){:width="600px"}
+![Animation of a proof of concept device cycling brightness on a Neewer panel](/assets/posts/neewer/panel_haxed.gif){:width="600px"}
+_RF-Nano sending cycles of brightness levels to a Neewer light panel_
 
 Great success, very nice! If you're interested, you can find the code for this proof of concept [on Github](https://gist.github.com/tjclement/2deaa87c48a04812aba883d9f56f5824). The next step is to integrate this into a nice remote, but that's an adventure for another time. Thanks for reading along, I hope you enjoyed this! ✌️
 
