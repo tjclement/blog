@@ -101,7 +101,7 @@ Next, onto the format of the payload itself. Luckily, the remote does not do muc
 | 2 | Unknown (always observed to be 0x01) |
 | 3 | Command type (0x82 for brightness, 0x83 for temperature) |
 | 4 | Brightness (in percentage[^brightsteps]: 0x00 is 0%, 0x64 is 100%) <br>or<br> Temperature (per 100k: 0x20 for 3200k, 0x38 for 5600k) |
-| 5 | Unknown 2nd byte for brightness/temperature<br>(value is always 0x52 + prev brightness byte, or 0x53 + prev temp byte) |
+| 5 | Unknown 2nd byte for brightness/temperature<br>(value is always <panel num> - 6 + prev brightness byte, or <panel num> - 5 + prev temp byte) |
 | 6 | Unknown (always observed to be 0xBB, can be omitted) |
 | 7 | Unknown (always observed to be 0x11, can be omitted) |
 | 8-31 | Zeroes (ignored) |
